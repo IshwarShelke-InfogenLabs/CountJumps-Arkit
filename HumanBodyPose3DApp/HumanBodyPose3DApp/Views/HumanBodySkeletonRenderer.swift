@@ -97,13 +97,23 @@ class HumanBodySkeletonRenderer: NSObject {
         )
         imageProjectionNode.position = SCNVector3(0, 0, 0)
 
-        if let inputImage = image?.cgImage {
-            imageProjectionNode.geometry?.firstMaterial?.diffuse.contents = inputImage
+        if let inputImage = image {
+            let orientedImage = imageWithExifOrientationApplied(inputImage)
+            imageProjectionNode.geometry?.firstMaterial?.diffuse.contents = orientedImage
         }
         imageProjectionNode.opacity = inputImageAlpa
         return imageProjectionNode
     }
 
+    // Apply the exif orientation to the image before setting as the material's contents
+    func imageWithExifOrientationApplied(_ image: UIImage) -> UIImage {
+        UIGraphicsBeginImageContext(image.size)
+        image.draw(at: .zero)
+        let orientedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return orientedImage ?? image
+    }
+    
     // Create the 2D image plane at an appropriate size in meters for the scene.
     func createInputImage2DNode(url: URL, observation: VNHumanBodyPose3DObservation) -> SCNNode {
         if let image = UIImage(contentsOfFile: url.path()) {
