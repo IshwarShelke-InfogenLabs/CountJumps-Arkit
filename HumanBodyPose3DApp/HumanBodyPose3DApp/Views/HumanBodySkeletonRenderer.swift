@@ -21,7 +21,7 @@ class HumanBodySkeletonRenderer: NSObject {
     public var cameraPyramidGeometry = SCNPyramid(width: 0.25, height: 0.25, length: 0.25)
 
     // MARK: - The input image plane node.
-    // Get the distance between two known joints in 3D, see what proportion of the 2D they cover, and
+    // Get the distance between two known joints in 3D, see what proportion of the 2D image they cover, and
     // increase the size of the plane as necessary. Then shift after this is done, and
     // ensure that the image node side is correct.
     func relate3DSkeletonProportionToImagePlane(observation: VNHumanBodyPose3DObservation) -> Float {
@@ -126,7 +126,7 @@ class HumanBodySkeletonRenderer: NSObject {
             let imageNode = createInputImage2DNode(image: image)
 
             // The rotation needs to match the camera rotation.
-            var corrected = cameraPivotTransform(observation: observation)
+            var corrected = observation.cameraOriginMatrix
             corrected.columns.3 = simd_float4(0, 0, 0, 1)
             imageNode.simdTransform = corrected.inverse
             return imageNode
@@ -148,17 +148,10 @@ class HumanBodySkeletonRenderer: NSObject {
         return originCameraNode
     }
 
-    func cameraPivotTransform(observation: VNHumanBodyPose3DObservation) -> simd_float4x4 {
-        // Align to be facing the skeleton.
-        let rotX180: simd_float4x4 = simd_float4x4(rotationX: Float.pi)
-        let alignedCameraCorrection = simd_mul(rotX180, observation.cameraOriginMatrix)
-        return alignedCameraCorrection
-    }
-
     func cameraRepresentationPivotTransform(observation: VNHumanBodyPose3DObservation) -> simd_float4x4 {
         // Rotate back 90 degrees because the default position of the pyramid is facing down.
         let rotX90: simd_float4x4 = simd_float4x4(rotationX: -Float.pi / 2)
-        return simd_mul(rotX90, cameraPivotTransform(observation: observation))
+        return simd_mul(rotX90, observation.cameraOriginMatrix)
     }
 
     func createCameraNode(observation: VNHumanBodyPose3DObservation) -> SCNNode {
@@ -166,7 +159,7 @@ class HumanBodySkeletonRenderer: NSObject {
         let camera = SCNCamera()
         let cameraNode = SCNNode()
         cameraNode.camera = camera
-        cameraNode.simdPivot = cameraPivotTransform(observation: observation)
+        cameraNode.simdPivot = observation.cameraOriginMatrix
         return cameraNode
     }
 
