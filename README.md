@@ -1,4 +1,4 @@
-# Detecting human body poses in 3D with Vision
+# Detecting human body poses in 3D with Vision and counting the jumps action
 Render skeletons of 3D body pose points in a scene overlaying the input image. 
 ## Overview
 - Note: This sample code project is associated with WWDC23 session 111241: [Explore 3D body pose and person segmentation in Vision](https://developer.apple.com/wwdc23/111241/).
