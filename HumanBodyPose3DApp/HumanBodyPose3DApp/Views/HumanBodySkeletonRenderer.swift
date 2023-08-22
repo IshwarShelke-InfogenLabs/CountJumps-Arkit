@@ -18,7 +18,7 @@ class HumanBodySkeletonRenderer: NSObject {
     public var imageNodeSize = CGSize(width: 1.8, height: 1.8)
     public var inputImageAlpa: CGFloat = 0.85
     public var cameraNodeAlpa: CGFloat = 0.6
-    public var cameraPyramidGeometry = SCNPyramid(width: 0.25, height: 0.25, length: 0.25)
+//    public var cameraPyramidGeometry = SCNPyramid(width: 0.25, height: 0.25, length: 0.25)
 
     // MARK: - The input image plane node.
     // Get the distance between two known joints in 3D, see what proportion of the 2D image they cover, and
@@ -68,7 +68,7 @@ class HumanBodySkeletonRenderer: NSObject {
 
     // Use the pointInImage API to determine the translation of the root joint.
     func computeOffsetOfRoot(observation: VNHumanBodyPose3DObservation) -> CGPoint {
-        var returnPoint = CGPoint(x: 0, y: 0)
+        var returnPoint = CGPoint(x: 0, y: 0) // This point will represent the offset of the root joint.
         do {
             let point = try observation.pointInImage(.root)
             // Change to image scale.
@@ -98,56 +98,57 @@ class HumanBodySkeletonRenderer: NSObject {
         imageProjectionNode.position = SCNVector3(0, 0, 0)
 
         if let inputImage = image {
-            let orientedImage = imageWithExifOrientationApplied(inputImage)
-            imageProjectionNode.geometry?.firstMaterial?.diffuse.contents = orientedImage
+            let orientedImage = inputImage//imageWithExifOrientationApplied(inputImage) // func is to check the correct orientation of the input image
+            imageProjectionNode.geometry?.firstMaterial?.diffuse.contents = orientedImage // to define the visual content of the input image
         }
-        imageProjectionNode.opacity = inputImageAlpa
-        return imageProjectionNode
+        imageProjectionNode.opacity = inputImageAlpa // represents the transparency (alpha value) of the image projection node.
+        return imageProjectionNode //Finally, the function returns the created imageProjectionNode, which can be added to the SceneKit scene to display the 2D image in a 3D environment.
     }
 
     // Apply the exif orientation to the image before setting as the material's contents
     func imageWithExifOrientationApplied(_ image: UIImage) -> UIImage {
-        UIGraphicsBeginImageContext(image.size)
-        image.draw(at: .zero)
+        UIGraphicsBeginImageContext(image.size) //This line starts a new image context with the size of the input image. An image context is like a canvas where you can draw or modify images.
+        image.draw(at: .zero) //  It effectively copies the input image onto the image context.
         let orientedImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
+        UIGraphicsEndImageContext() // This line ends the current image context and releases any resources associated with it.
         return orientedImage ?? image
     }
     
     // Create the 2D image plane at an appropriate size in meters for the scene.
-    func createInputImage2DNode(url: URL, observation: VNHumanBodyPose3DObservation) -> SCNNode {
-        if let image = UIImage(contentsOfFile: url.path()) {
+    func createInputImage2DNode(image: UIImage?, observation: VNHumanBodyPose3DObservation) -> SCNNode {
+        if let image = image {
             // Adjust the size of the plane based on the aspect ratio from the default height.
             let aspectRatioW = image.size.width / image.size.height
             self.imageNodeSize.height = self.imageNodeSize.height
             self.imageNodeSize.width = self.imageNodeSize.height * aspectRatioW
 
             // Create the image node at (0 0 0).
-            let imageNode = createInputImage2DNode(image: image)
+            let imageNode = createInputImage2DNode(image: image) //It essentially creates a plane with the image projected onto it.
 
             // The rotation needs to match the camera rotation.
             var corrected = observation.cameraOriginMatrix
             corrected.columns.3 = simd_float4(0, 0, 0, 1)
-            imageNode.simdTransform = corrected.inverse
+            imageNode.simdTransform = corrected.inverse // This step ensures that the image node's orientation matches the camera's orientation, so the projected image appears correctly aligned with the scene.
             return imageNode
         }
         return createInputImage2DNode(image: nil)
     }
 
     // MARK: - Camera nodes
-    //  The location and rotation of the camera.
-    func createCameraPyramidNode(observation: VNHumanBodyPose3DObservation) -> SCNNode {
-        var originCameraNode = SCNNode()
-        originCameraNode = createNodeForRecognizedPoint(
-            point3D: simd_float3(x: 0, y: 0, z: 0),
-            jointGeometry: cameraPyramidGeometry
-        )
-        originCameraNode.opacity = cameraNodeAlpa
-        originCameraNode.geometry?.firstMaterial?.diffuse.contents = UIColor(.cyan)
-        originCameraNode.simdPivot = cameraRepresentationPivotTransform(observation: observation)
-        return originCameraNode
-    }
+    // The purpose of this function is to create and return a 3D representation (a pyramid) of the camera's position in the scene based on the observation data.
+//    func createCameraPyramidNode(observation: VNHumanBodyPose3DObservation) -> SCNNode {
+//        var originCameraNode = SCNNode()
+//        originCameraNode = createNodeForRecognizedPoint(
+//            point3D: simd_float3(x: 0, y: 0, z: 0),
+//            jointGeometry: cameraPyramidGeometry
+//        )
+//        originCameraNode.opacity = cameraNodeAlpa
+//        originCameraNode.geometry?.firstMaterial?.diffuse.contents = UIColor(.cyan)
+//        originCameraNode.simdPivot = cameraRepresentationPivotTransform(observation: observation)
+//        return originCameraNode
+//    }
 
+    //The purpose of this function is to compute a transformation matrix that adjusts the pivot (center of rotation) of the camera representation, which is typically a pyramid, to align it correctly in the scene.
     func cameraRepresentationPivotTransform(observation: VNHumanBodyPose3DObservation) -> simd_float4x4 {
         // Rotate back 90 degrees because the default position of the pyramid is facing down.
         let rotX90: simd_float4x4 = simd_float4x4(rotationX: -Float.pi / 2)
@@ -156,11 +157,11 @@ class HumanBodySkeletonRenderer: NSObject {
 
     func createCameraNode(observation: VNHumanBodyPose3DObservation) -> SCNNode {
         // Set the default camera to this view.
-        let camera = SCNCamera()
-        let cameraNode = SCNNode()
+        let camera = SCNCamera() //This line creates an instance of SCNCamera. The SCNCamera class represents the properties and attributes of a camera in a 3D scene.
+        let cameraNode = SCNNode() // This line creates a new, empty SCNNode to serve as the parent node for the camera. A parent node is a container for other nodes, and in this case, the camera node will be attached to this parent node.
         cameraNode.camera = camera
         cameraNode.simdPivot = observation.cameraOriginMatrix
-        return cameraNode
+        return cameraNode // This line returns the created cameraNode, which represents the camera node in the 3D scene. The camera node is now attached to an SCNCamera and has its pivot set based on the observation, allowing it to be positioned correctly in the scene.
     }
 
     // MARK: - Skeleton nodes
@@ -169,18 +170,19 @@ class HumanBodySkeletonRenderer: NSObject {
         observation: VNHumanBodyPose3DObservation
     ) -> [VNHumanBodyPose3DObservation.JointName: SCNNode] {
 
-        var nodeJointDict = [VNHumanBodyPose3DObservation.JointName: SCNNode]()
+        var nodeJointDict = [VNHumanBodyPose3DObservation.JointName: SCNNode]() // This dictionary will store the skeleton joints and their corresponding SCNNode representations.
         let skeletonJoints = observation.availableJointNames
+//        print("Available Joint Name: ", skeletonJoints)
         for jointName in skeletonJoints {
             do {
                 let recognizedPoint = try observation.recognizedPoint(jointName)
-                let pointFloat3 = recognizedPoint.position.translationVector
+                let pointFloat3 = recognizedPoint.position.translationVector // extracts the 3D position of the recognized point
                 
                 let node = createNodeForRecognizedPoint(
                     point3D: pointFloat3,
                     jointGeometry: defaultNodeGeometry()
                 )
-                nodeJointDict.updateValue(node, forKey: jointName)
+                nodeJointDict.updateValue(node, forKey: jointName) //adds the newly created node to the nodeJointDict dictionary with the jointName as the key.
             } catch {
                 print("Unable to return point: \(error).")
             }

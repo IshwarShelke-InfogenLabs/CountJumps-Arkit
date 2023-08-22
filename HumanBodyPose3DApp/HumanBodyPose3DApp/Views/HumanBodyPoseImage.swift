@@ -17,6 +17,7 @@ struct HumanBodyImage: View {
         case .success(let image):
             image.resizable()
         case .loading:
+//            print(FrameHandler.instanse?.frame)
             ProgressView()
         case .noneselected:
             Image(systemName: "figure.arms.open")
@@ -30,44 +31,19 @@ struct HumanBodyImage: View {
     }
 }
 
-struct PersonPlaceholderImageView: View {
-    let imageState: HumanBodyPoseImageModel.ImageState
-    
-    var body: some View {
-        HumanBodyImage(imageState: imageState)
-            .scaledToFill()
-            .clipShape(RoundedRectangle(cornerRadius: 8.0, style: RoundedCornerStyle.continuous))
-            .frame(width: 300, height: 300)
-            .background {
-                RoundedRectangle(cornerRadius: 8.0, style: RoundedCornerStyle.continuous).fill(
-                    LinearGradient(
-                        colors: [.blue, .indigo],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-            }
-    }
-}
 
 struct SelectablePersonPhotoView: View {
-    @ObservedObject var viewModel: HumanBodyPoseImageModel
+    @StateObject private var model = FrameHandler()
+    @State var capture : Bool = false
+    @State var showCamera : Bool = false
+    @State var image: CGImage?
     
     // Displays the PhotosPicker view and the corresponding label view.
     var body: some View {
         VStack {
-            PersonPlaceholderImageView(imageState: viewModel.imageState)
-                .padding(50)
-            PhotosPicker(selection: $viewModel.imageSelection,
-                         matching: .images,
-                         photoLibrary: .shared()) {
-                Image(systemName: "photo.stack")
-                    .symbolRenderingMode(.multicolor)
-                    .font(.system(size: 50))
-                    .foregroundColor(.accentColor)
-                Text("Select Photo")
-            }
-            .buttonStyle(.borderless)
+            
+            FrameView(image: image)
+                .ignoresSafeArea()
         }
     }
 }

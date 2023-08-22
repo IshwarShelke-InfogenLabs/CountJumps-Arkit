@@ -14,6 +14,7 @@ struct SkeletonScene: View {
     @StateObject var viewModel = HumanBodyPose3DDetector()
     @State private var showCamera = false
     @State private var buttonPrompt: String = "Switch Perspective"
+    var image: CGImage?
     
     var body : some View {
         var scene: SCNScene? {
@@ -25,8 +26,8 @@ struct SkeletonScene: View {
             }
             
             var imageNode = SCNNode()
-            if let fileURL = viewModel.fileURL {
-                imageNode = renderer.createInputImage2DNode(url: fileURL, observation: observation)
+            if let image = image {
+                imageNode = renderer.createInputImage2DNode(image: UIImage(cgImage: image), observation: observation)
                 myScene.rootNode.addChildNode(imageNode)
             }
             
@@ -55,7 +56,7 @@ struct SkeletonScene: View {
             if showCamera {
                 myScene.rootNode.addChildNode(renderer.createCameraNode(observation: observation))
             } else {
-                myScene.rootNode.addChildNode(renderer.createCameraPyramidNode(observation: observation))
+//                myScene.rootNode.addChildNode(renderer.createCameraPyramidNode(observation: observation))
             }
             
             // Add skeleton nodes to the scene.
